@@ -638,6 +638,32 @@ func TestMap_FlattenAnonymous(t *testing.T) {
 	}
 }
 
+func TestMap_UnixTimeField(t *testing.T) {
+	type A struct {
+		CreatedAt time.Time  `structs:"createdAt,unix"`
+		DeletedAt *time.Time `structs:"deletedAt,unix"`
+
+		Name string `structs:"name,unix"`
+	}
+
+	a := A{CreatedAt: time.Now(), Name: "name"}
+	m := Map(a)
+
+	unix, ok := m["createdAt"].(int64)
+	if !ok || unix == 0 {
+		t.Error("time field with tag unix must be int64")
+	}
+
+	unix, ok = m["deletedAt"].(int64)
+	if !ok || unix != 0 {
+		t.Error("time ptr field with tag unix must be int64")
+	}
+
+	if _, ok := m["name"].(string); !ok {
+		t.Error("string field with tag unix has to be string")
+	}
+}
+
 func TestMap_TimeField(t *testing.T) {
 	type A struct {
 		CreatedAt time.Time

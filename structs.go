@@ -3,6 +3,7 @@ package structs
 
 import (
 	"fmt"
+	"time"
 
 	"reflect"
 )
@@ -77,6 +78,11 @@ func New(s interface{}) *Struct {
 //   // the field is skipped if empty.
 //   Field string `structs:",omitempty"`
 //
+// A tag value with the option of "unix" usded in a time field is to use time.Unix() to
+// get the value. Example:
+//
+//   // CreatedAt time.Time `struct:"createdAt,unix"`
+//
 // Note that only exported fields of a struct can be accessed, non exported
 // fields will be neglected.
 func (s *Struct) Map() map[string]interface{} {
@@ -138,6 +144,24 @@ func (s *Struct) FillMap(out map[string]interface{}) {
 				out[name] = s.String()
 			}
 			continue
+		}
+
+		if tagOpts.Has("unix") {
+			ts := int64(-1)
+			if t, ok := finalVal.(time.Time); ok {
+				ts = t.Unix()
+			} else if tPtr, ok := finalVal.(*time.Time); ok {
+				if tPtr != nil {
+					ts = tPtr.Unix()
+				} else {
+					ts = 0
+				}
+			}
+
+			if ts >= 0 {
+				out[name] = ts
+				continue
+			}
 		}
 
 		if isSubStruct && (tagOpts.Has("flatten") || (field.Anonymous && s.FlattenAnonymous)) {
